@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.mock.conloop.model.AuthRequest;
 import com.mock.conloop.model.RegisterRequest;
+import com.mock.conloop.model.TokenCache;
+import com.mock.conloop.model.User;
+import com.mock.conloop.repository.TokenRepository;
 import com.mock.conloop.security.JwtProvider;
 import com.mock.conloop.service.UserService;
 
@@ -27,13 +30,19 @@ public class AuthController{
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private TokenRepository tokenRepository;
+
     @PostMapping(value = "/auth/token")
     public ResponseEntity<Object> createAuthenticationToken(@RequestBody AuthRequest authenticationRequest) throws Exception {
         
         final Authentication auth = authenticate(authenticationRequest.getEmail(),
                 authenticationRequest.getPassword());
         SecurityContextHolder.getContext().setAuthentication(auth);
-        return ResponseEntity.ok(jwtTokenUtil.generateToken(auth));
+        String token = jwtTokenUtil.generateToken(auth);   
+        User user = (User)auth.getPrincipal();
+        tokenRepository.save(user.getEmail(), new TokenCache(token, null));
+        return ResponseEntity.ok(token);
     }
 
     @PostMapping(value = "/register")

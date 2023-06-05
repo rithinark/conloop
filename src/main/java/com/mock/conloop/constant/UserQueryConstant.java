@@ -24,9 +24,9 @@ public class UserQueryConstant {
            "WHERE\n"+
                 "email = :email;";
 
-    public static final String USER_QUERY = "SELECT * FROM USERS";
+    public static final String USER_QUERY = "SELECT * FROM users";
 
-    public static final String INSERT_USER_QUERY = "INSERT INTO Users (user_id, username, email, password) Values"+ 
+    public static final String INSERT_USER_QUERY = "INSERT INTO users (user_id, username, email, password) Values"+ 
     "(:user_id, :username, :email, :password)";
 
     public static final String INSERT_USER_DETAILS_QUERY = "INSERT INTO user_details (user_details_id, user_id) VALUES(:user_details_id, :user_id)";

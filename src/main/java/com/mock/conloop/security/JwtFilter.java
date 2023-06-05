@@ -38,7 +38,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         final Optional<String> jwt = getJwtFromRequest(request);
         jwt.ifPresent(token -> {
-            if (jwtProvider.validateToken(token)) {
+            if (jwtProvider.validateToken(token) && jwtProvider.validateTokenWithCache(token)) {
                 setSecurityContext(new WebAuthenticationDetailsSource().buildDetails(request), token);
             }
         });

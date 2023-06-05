@@ -26,4 +26,6 @@ public class ContextConstant {
     public static final String ROLE_GROUP_USER = "ROLE_GROUP_USER";
 
     public static final String TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss";
+
+    public final static String TOKEN_CACHE_PREFIX = "jwt-token";
 }
