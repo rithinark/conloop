@@ -1,6 +1,7 @@
 package com.mock.conloop.security;
 
 import java.io.Serializable;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -99,5 +100,10 @@ public class JwtProvider implements Serializable {
         if(tokenCache.isPresent())
             return tokenCache.get().getJwtToken().equals(token);
         return false;
+    }
+
+    public String[] decodedBase64(String token) {
+        byte[] decodedBytes = Base64.getDecoder().decode(token);
+        return new String(decodedBytes).split(":", 2);
     }
 }
