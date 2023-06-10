@@ -70,12 +70,14 @@ public class UserRepositoryImpl implements UserRepository {
         return user;
     }
 
-    private List<Query> prepareInsertQueries(User user){
+    private List<Query> prepareInsertQueries(User user) {
         List<Query> queries = new LinkedList<>();
         user.setUserId(UUID.randomUUID().toString());
         queries.add(loadInsertUserQuery(user));
         queries.add(loadInsertUserDetailsQuery(user));
-        queries.add(loadInsertUserRolesQuery(user));
+        for (Role role : user.getRoles()) {
+            queries.add(loadInsertUserRolesQuery(user.getUserId(), role.getRoleName()));
+        }
         return queries;
     }
 
@@ -89,19 +91,19 @@ public class UserRepositoryImpl implements UserRepository {
         return new Query(UserQueryConstant.INSERT_USER_QUERY, parameterSource);
     }
 
-    private Query loadInsertUserDetailsQuery(User user){
+    private Query loadInsertUserDetailsQuery(User user) {
         MapSqlParameterSource parameterSource = new MapSqlParameterSource();
         parameterSource
-            .addValue(ContextConstant.USER_DETAILS_ID, UUID.randomUUID().toString(),Types.VARCHAR)
-            .addValue(ContextConstant.USER_ID, user.getUserId(), Types.VARCHAR);
+                .addValue(ContextConstant.USER_DETAILS_ID, UUID.randomUUID().toString(), Types.VARCHAR)
+                .addValue(ContextConstant.USER_ID, user.getUserId(), Types.VARCHAR);
         return new Query(UserQueryConstant.INSERT_USER_DETAILS_QUERY, parameterSource);
     }
 
-    private Query loadInsertUserRolesQuery(User user){
+    private Query loadInsertUserRolesQuery(String userId, String roleName) {
         MapSqlParameterSource parameterSource = new MapSqlParameterSource();
         parameterSource
-                .addValue(ContextConstant.USER_ID, user.getUserId(), Types.VARCHAR)
-                .addValue(ContextConstant.ROLE_NAME, ContextConstant.ROLE_USER, Types.VARCHAR);
+                .addValue(ContextConstant.USER_ID, userId, Types.VARCHAR)
+                .addValue(ContextConstant.ROLE_NAME, roleName, Types.VARCHAR);
         return new Query(UserQueryConstant.INSERT_USER_ROLES_QUERY, parameterSource);
     }
 }

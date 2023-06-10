@@ -1,8 +1,12 @@
 package com.mock.conloop.security;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.List;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -15,6 +19,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.mock.conloop.constant.SecurityConstant;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,15 +29,15 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
-    public static final String AUTHORIZATION = "Authorization";
-    public static final String BEARER = "Bearer ";
-    public static final String BASIC = "Basic ";
-    
     private AuthenticationManager authManager;
     private final JwtProvider jwtProvider;
     private final UserDetailsService userDetailsService;
 
-    public JwtFilter(JwtProvider jwtProvider, UserDetailsService userDetailsService, AuthenticationManager authManager) {
+    @Value("${spring.data.rest.login-uri}")
+    private String loginUri;
+
+    public JwtFilter(JwtProvider jwtProvider, UserDetailsService userDetailsService,
+            AuthenticationManager authManager) {
         this.jwtProvider = jwtProvider;
         this.userDetailsService = userDetailsService;
         this.authManager = authManager;
@@ -43,25 +49,25 @@ public class JwtFilter extends OncePerRequestFilter {
         UsernamePasswordAuthenticationToken authentication;
         final Optional<String> token = getTokenFromRequest(request);
 
-        if(token.isEmpty() || !isValidToken(token.get())){
+        if (token.isEmpty() || !isValidToken(token.get())) {
             filterChain.doFilter(request, response);
             return;
         }
         String authToken = token.get();
         final String uri = request.getRequestURI();
 
-        if(authToken.startsWith(BASIC) && uri.endsWith("/auth/token")){
-            authToken = StringUtils.delete(authToken, BASIC).trim();
-            String[] usernamePassword = jwtProvider.decodedBase64(authToken);
-            authentication = new UsernamePasswordAuthenticationToken(usernamePassword[0], usernamePassword[1]);
+        if (authToken.startsWith(SecurityConstant.BASIC) && uri.endsWith(loginUri)) {
+            List<String> usernamePassword = decodedBase64(authToken);
+            authentication = new UsernamePasswordAuthenticationToken(usernamePassword.get(0), usernamePassword.get(1));
             Authentication authResult = this.authManager.authenticate(authentication);
             SecurityContextHolder.getContext().setAuthentication(authResult);
 
         }
-        if (authToken.startsWith(BEARER) && !uri.endsWith("/auth/token")) {
-            setSecurityContext(new WebAuthenticationDetailsSource().buildDetails(request), authToken);
+        if (authToken.startsWith(SecurityConstant.BEARER) && !uri.endsWith(loginUri)) {
+            authToken = StringUtils.delete(authToken, SecurityConstant.BEARER).trim();
+            if (!jwtProvider.isTokenExpired(authToken))
+                setSecurityContext(new WebAuthenticationDetailsSource().buildDetails(request), authToken);
         }
-
 
         filterChain.doFilter(request, response);
     }
@@ -77,16 +83,21 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     private static Optional<String> getTokenFromRequest(HttpServletRequest request) {
-        String token = request.getHeader(AUTHORIZATION);
+        String token = request.getHeader(SecurityConstant.AUTHORIZATION);
         if (StringUtils.hasText(token)) {
             return Optional.of(token);
         }
         return Optional.empty();
     }
 
-    private boolean isValidToken(String token){
-        return token.endsWith(BEARER) || token.endsWith(BASIC);
+    private boolean isValidToken(String token) {
+        return token.startsWith(SecurityConstant.BEARER) || token.startsWith(SecurityConstant.BASIC);
     }
 
+    public List<String> decodedBase64(String token) {
+        String baseToken = StringUtils.delete(token, SecurityConstant.BASIC).trim();
+        byte[] decodedBytes = Base64.getDecoder().decode(baseToken);
+        return Arrays.asList(new String(decodedBytes).split(":", 2));
+    }
 
 }

@@ -1,22 +1,20 @@
 package com.mock.conloop.service;
 
-import java.util.HashSet;
+import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
 
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import com.mock.conloop.constant.ContextConstant;
 import com.mock.conloop.model.Role;
 import com.mock.conloop.model.User;
+import com.mock.conloop.model.UserDto;
 import com.mock.conloop.repository.UserRepository;
 
 @Service
-public class UserServiceImpl implements UserDetailsService, UserService {
+public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
 
     public UserServiceImpl(UserRepository userRepository) {
@@ -24,27 +22,19 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String email) {
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException(String.format(
-                "User with email '%s' Not Found", email)));
-        return new User(
-                user.getEmail(), user.getPassword(), true, true, true,
-                true, getAuthorities(user.getRoles()));
-    }
+    public UserDto createUser(User user) {
+        User _user;
+        UserDto userDto;
+        List<String> roles = Arrays.asList(ContextConstant.ROLE_USER);
+        user.setRoles(roles.stream().map((String role) -> new Role(null, role)).toList());
 
-    public Set<GrantedAuthority> getAuthorities(List<Role> roles) {
-        Set<GrantedAuthority> authorities = new HashSet<>();
-        for (Role role : roles) {
-            authorities.add(new SimpleGrantedAuthority(role.getRoleName()));
+        try {
+            _user = userRepository.save(user);
+            userDto = new UserDto(_user);
+            return userDto;
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("invaid user name");
         }
-        return authorities;
     }
-
-    @Override
-    public User createUser(User user) {
-        return userRepository.save(user);
-    }
-
-    
 
 }
