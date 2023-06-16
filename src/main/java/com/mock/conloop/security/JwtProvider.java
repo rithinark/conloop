@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -24,6 +25,9 @@ public class JwtProvider implements Serializable {
 
     @Value("${jwt.token.validity}")
     public long tokenValidity;
+
+    @Value("${refresh.token.validity}")
+    public long refreshTokenValidity;
 
     @Value("${jwt.secret.key}")
     public String secretKey;
@@ -65,7 +69,7 @@ public class JwtProvider implements Serializable {
         return generateToken(user.getEmail(), roles);
     }
 
-    private String generateToken(String subject, List<String> roles) {
+    public String generateToken(String subject, List<String> roles) {
         final long now = System.currentTimeMillis();
         return JWT.create()
                 .withIssuer(issuer)
@@ -77,5 +81,20 @@ public class JwtProvider implements Serializable {
                         .toString())
                 .withNotBefore(new Date(now))
                 .sign(Algorithm.HMAC256(secretKey));
+    }
+
+    public String generateRefreshToken(User user) {
+        final long now = System.currentTimeMillis();
+        return JWT.create()
+                .withIssuer(issuer)
+                .withSubject(user.getEmail())
+                .withExpiresAt(new Date(now + refreshTokenValidity * 1000L))
+                .withClaim(SecurityConstant.ROLES,
+                        user.getAuthorities().stream().map(authority -> authority.getAuthority()).toList())
+                .sign(Algorithm.HMAC256(secretKey));
+    }
+
+    public boolean isValidToken(String token) {
+        return StringUtils.hasText(token) && !isTokenExpired(token);
     }
 }

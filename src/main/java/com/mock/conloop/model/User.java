@@ -10,11 +10,18 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import lombok.ToString;
+
+@ToString
+
 public class User implements UserDetails {
     private static final long serialVersionUID = 435678976543245697L;
     private String userId;
     private String username;
     private String email;
+    @JsonIgnore
     private String password;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -29,9 +36,11 @@ public class User implements UserDetails {
     public User() {
     }
 
-    public User(String email, String password, boolean enabled, boolean accountNonExpired,
+    public User(String userId, String username, String email, String password, boolean enabled, boolean accountNonExpired,
             boolean credentialsNonExpired, boolean accountNonLocked,
             Set<GrantedAuthority> authorities) {
+        this.userId = userId;
+        this.username = username;
         this.email = email;
         this.password = password;
         this.enabled = enabled;

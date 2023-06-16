@@ -15,6 +15,6 @@ public class UserDto {
         this.userId = user.getUserId();
         this.username = user.getUsername();
         this.email = user.getEmail();
-        this.roles = user.getRoles().stream().map((Role role) -> role.getRoleName()).toList();
+        this.roles = user.getAuthorities().stream().map(authorities -> authorities.getAuthority()).toList();
     }
 }
